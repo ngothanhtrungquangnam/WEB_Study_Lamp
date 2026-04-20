@@ -112,16 +112,16 @@ def make_rtc_timestamp(data, fallback_now):
     yr = data.get("year",  fallback_now.year % 100)
     return "20%02d-%02d-%02d %02d:%02d:%02d" % (yr, mo, dd, h, m, s)
 
-
 def is_online():
-    """Kiểm tra ESP32 còn online không (timeout 10 giây)."""
+    """Kiểm tra ESP32 còn online không (timeout 25 giây)."""
     if not system_state["last_seen"]:
         return False
     try:
         delta = (datetime.now() -
                  datetime.strptime(system_state["last_seen"],
                                    "%Y-%m-%d %H:%M:%S")).total_seconds()
-        return delta < 10
+        # Đã thay đổi: Cho phép trễ tối đa 25 giây
+        return delta < 25 
     except Exception:
         return False
 
