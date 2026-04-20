@@ -1,0 +1,314 @@
+[
+  {
+    "timestamp": "2026-04-18 16:49:27",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 62.8
+  },
+  {
+    "timestamp": "2026-04-19 11:50:27",
+    "event": "WORK_END",
+    "duration": 964,
+    "lux_avg": 850.0
+  },
+  {
+    "timestamp": "2026-04-19 11:50:35",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 703.1
+  },
+  {
+    "timestamp": "2026-04-19 11:50:39",
+    "event": "WORK_END",
+    "duration": 3,
+    "lux_avg": 680.8
+  },
+  {
+    "timestamp": "2026-04-19 11:53:59",
+    "event": "WORK_END",
+    "duration": 11,
+    "lux_avg": 896.8
+  },
+  {
+    "timestamp": "2026-04-19 12:02:52",
+    "event": "WORK_END",
+    "duration": 8,
+    "lux_avg": 1000.8
+  },
+  {
+    "timestamp": "2026-04-19 12:17:03",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 381.2
+  },
+  {
+    "timestamp": "2026-04-19 22:04:01",
+    "event": "WORK_END",
+    "duration": 434,
+    "lux_avg": 29.1
+  },
+  {
+    "timestamp": "2026-04-19 22:35:28",
+    "event": "WORK_END",
+    "duration": 347,
+    "lux_avg": 42.6
+  },
+  {
+    "timestamp": "2026-04-19 22:52:41",
+    "event": "RESET",
+    "duration": 0,
+    "lux_avg": 42.4
+  },
+  {
+    "timestamp": "2026-04-20 12:02:23",
+    "event": "WORK_END",
+    "duration": 9,
+    "lux_avg": 13.1
+  },
+  {
+    "timestamp": "2026-04-20 12:02:35",
+    "event": "WORK_END",
+    "duration": 2,
+    "lux_avg": 10.8
+  },
+  {
+    "timestamp": "2026-04-20 12:02:39",
+    "event": "RESET",
+    "duration": 0,
+    "lux_avg": 10.4
+  },
+  {
+    "timestamp": "2026-04-20 12:03:07",
+    "event": "WORK_END",
+    "duration": 15,
+    "lux_avg": 13.0
+  },
+  {
+    "timestamp": "2026-04-20 12:03:30",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 551.0
+  },
+  {
+    "timestamp": "2026-04-20 12:04:18",
+    "event": "WORK_END",
+    "duration": 42,
+    "lux_avg": 8.2
+  },
+  {
+    "timestamp": "2026-04-20 12:04:22",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 5.8
+  },
+  {
+    "timestamp": "2000-01-01 00:07:42",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 656.9
+  },
+  {
+    "timestamp": "2000-01-01 00:08:40",
+    "event": "WORK_END",
+    "duration": 54,
+    "lux_avg": 713.0
+  },
+  {
+    "timestamp": "2000-01-01 00:12:38",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 347.6
+  },
+  {
+    "timestamp": "2000-01-01 00:14:15",
+    "event": "WORK_END",
+    "duration": 5,
+    "lux_avg": 407.5
+  },
+  {
+    "timestamp": "2000-01-01 00:14:17",
+    "event": "RESET",
+    "duration": 0,
+    "lux_avg": 5.8
+  },
+  {
+    "timestamp": "2000-01-01 00:14:42",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 506.3
+  },
+  {
+    "timestamp": "2000-01-01 00:35:45",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 492.3
+  },
+  {
+    "timestamp": "2000-01-01 00:54:36",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 420.2
+  },
+  {
+    "timestamp": "2000-01-01 00:57:31",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 417.5
+  },
+  {
+    "timestamp": "2026-04-20 03:16:42",
+    "event": "WORK_END",
+    "duration": 29,
+    "lux_avg": 415.4
+  },
+  {
+    "timestamp": "2026-04-20 03:16:44",
+    "event": "RESET",
+    "duration": 0,
+    "lux_avg": 20.8
+  },
+  {
+    "timestamp": "2026-04-20 03:16:52",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 3.3
+  },
+  {
+    "timestamp": "2026-04-20 03:17:22",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 326.5
+  },
+  {
+    "timestamp": "2026-04-20 03:22:59",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 420.1
+  },
+  {
+    "timestamp": "2026-04-20 03:25:16",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 2.5
+  },
+  {
+    "timestamp": "2026-04-20 03:28:37",
+    "event": "RESET",
+    "duration": 0,
+    "lux_avg": 152.8
+  },
+  {
+    "timestamp": "2026-04-20 03:28:46",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 2.5
+  },
+  {
+    "timestamp": "2026-04-20 03:29:12",
+    "event": "WORK_END",
+    "duration": 2,
+    "lux_avg": 3.9
+  },
+  {
+    "timestamp": "2026-04-20 03:29:14",
+    "event": "RESET",
+    "duration": 0,
+    "lux_avg": 3.3
+  },
+  {
+    "timestamp": "2026-04-20 03:29:26",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 2.5
+  },
+  {
+    "timestamp": "2026-04-20 03:29:32",
+    "event": "WORK_END",
+    "duration": 3,
+    "lux_avg": 411.2
+  },
+  {
+    "timestamp": "2026-04-20 03:33:58",
+    "event": "WORK_END",
+    "duration": 261,
+    "lux_avg": 669.4
+  },
+  {
+    "timestamp": "2026-04-20 03:34:05",
+    "event": "RESET",
+    "duration": 0,
+    "lux_avg": 51.7
+  },
+  {
+    "timestamp": "2026-04-20 03:34:13",
+    "event": "WORK_END",
+    "duration": 4,
+    "lux_avg": 180.8
+  },
+  {
+    "timestamp": "2026-04-20 03:41:38",
+    "event": "WORK_END",
+    "duration": 237,
+    "lux_avg": 4401.2
+  },
+  {
+    "timestamp": "2026-04-20 03:42:44",
+    "event": "WORK_END",
+    "duration": 58,
+    "lux_avg": 3683.5
+  },
+  {
+    "timestamp": "2026-04-20 04:02:52",
+    "event": "WORK_END",
+    "duration": 1195,
+    "lux_avg": 2672.0
+  },
+  {
+    "timestamp": "2026-04-20 04:04:17",
+    "event": "BREAK_END",
+    "duration": 0,
+    "lux_avg": 2603.9
+  },
+  {
+    "timestamp": "2026-04-20 04:04:27",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 1054.7
+  },
+  {
+    "timestamp": "2026-04-20 04:04:38",
+    "event": "WORK_END",
+    "duration": 6,
+    "lux_avg": 1093.1
+  },
+  {
+    "timestamp": "2026-04-20 04:07:43",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 900.4
+  },
+  {
+    "timestamp": "2026-04-20 04:23:51",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 7.5
+  },
+  {
+    "timestamp": "2026-04-20 04:24:00",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 561.6
+  },
+  {
+    "timestamp": "2026-04-20 04:25:29",
+    "event": "WORK_END",
+    "duration": 2,
+    "lux_avg": 806.2
+  },
+  {
+    "timestamp": "2026-04-20 04:25:34",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 7.5
+  }
+]

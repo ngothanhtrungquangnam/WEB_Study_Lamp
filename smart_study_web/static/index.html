@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Study Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Clash+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════
+   TOKENS & RESET
+═══════════════════════════════════════════ */
+:root {
+  --bg:        #05070d;
+  --bg2:       #080b14;
+  --panel:     #0c1020;
+  --panel2:    #111528;
+  --rim:       #1a2040;
+  --rim2:      #242b50;
+
+  --work:      #00e5a0;
+  --work-dim:  rgba(0,229,160,.12);
+  --work-glow: rgba(0,229,160,.35);
+
+  --break:     #ffd166;
+  --break-dim: rgba(255,209,102,.12);
+  --break-glow:rgba(255,209,102,.35);
+
+  --pause:     #c77dff;
+  --pause-dim: rgba(199,125,255,.12);
+  --pause-glow:rgba(199,125,255,.35);
+
+  --idle:      #3a4468;
+
+  --accent:    #00e5a0;
+  --danger:    #ff4d6d;
+  --text:      #d4daf5;
+  --sub:       #5a6690;
+  --muted:     #2e3660;
+
+  --online:    #00e5a0;
+  --offline:   #ff4d6d;
+
+  --r: 12px;
+  --mono: 'DM Mono', monospace;
+  --display: 'Clash Display', sans-serif;
+  --body: 'Outfit', sans-serif;
+
+  --t-fast: 0.15s ease;
+  --t-med:  0.3s ease;
+  --t-slow: 0.6s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Starfield bg */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%, rgba(0,229,160,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(199,125,255,.05) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 60% 30%, rgba(255,209,102,.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Fine grid */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+.app {
+  position: relative; z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--rim);
+  position: relative;
+}
+header::after {
+  content: '';
+  position: absolute; bottom: -1px; left: 0;
+  width: 120px; height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.logo {
+  display: flex; align-items: center; gap: 14px;
+}
+.logo-icon {
+  width: 36px; height: 36px;
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  display: grid; place-items: center;
+  position: relative;
+  overflow: hidden;
+}
+.logo-icon::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--work-dim);
+}
+.logo-icon svg { position: relative; z-index: 1; }
+
+.logo-text {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--text);
+}
+.logo-text span {
+  color: var(--accent);
+}
+.logo-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .2em;
+  color: var(--sub);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+.status-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--rim);
+  background: var(--panel);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--sub);
+  transition: border-color var(--t-med), color var(--t-med);
+}
+.status-pill.online { border-color: rgba(0,229,160,.3); color: var(--online); }
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--offline);
+  flex-shrink: 0;
+  transition: background var(--t-med);
+}
+.status-dot.online {
+  background: var(--online);
+  animation: pulse-ring 2s infinite;
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(0,229,160,.5); }
+  70%  { box-shadow: 0 0 0 5px rgba(0,229,160,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,229,160,0); }
+}
+
+/* ═══════════════════════════════════════════
+   MAIN GRID
+═══════════════════════════════════════════ */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: auto auto auto;
+  gap: 16px;
+}
+
+/* ═══════════════════════════════════════════
+   PANEL BASE
+═══════════════════════════════════════════ */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--r);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--t-med);
+}
+.panel:hover { border-color: var(--rim2); }
+
+/* Corner accent */
+.panel::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 60px; height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: .5;
+  transition: opacity var(--t-med);
+}
+.panel:hover::before { opacity: 1; }
+
+.panel-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-label::before {
+  content: '';
+  width: 14px; height: 1px;
+  background: var(--accent);
+  opacity: .6;
+}
+
+/* ═══════════════════════════════════════════
+   HERO PANEL — Pomodoro Status
+═══════════════════════════════════════════ */
+.panel-hero {
+  grid-column: 1;
+  grid-row: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 32px;
+  align-items: center;
+  padding: 32px;
+}
+
+/* Left: pomodoro info */
+.hero-left {}
+
+/* Center: RTC clock */
+.hero-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px 28px;
+  border-left: 1px solid var(--rim);
+  border-right: 1px solid var(--rim);
+  min-width: 180px;
+}
+
+/* Right: ring + LED */
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+/* State badge */
+.state-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  transition: all var(--t-med);
+}
+.state-badge .dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.state-badge.WORK  { background: var(--work-dim);  color: var(--work);  border: 1px solid rgba(0,229,160,.25); }
+.state-badge.BREAK { background: var(--break-dim); color: var(--break); border: 1px solid rgba(255,209,102,.25); }
+.state-badge.PAUSE { background: var(--pause-dim); color: var(--pause); border: 1px solid rgba(199,125,255,.25); }
+.state-badge.IDLE  { background: rgba(58,68,104,.15); color: var(--idle); border: 1px solid rgba(58,68,104,.3); }
+
+/* Big countdown */
+.countdown-wrap { margin-bottom: 8px; }
+.countdown {
+  font-family: var(--display);
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: -.04em;
+  line-height: 1;
+  transition: color var(--t-med);
+  position: relative;
+  display: inline-block;
+}
+.countdown.WORK  { color: var(--work);  text-shadow: 0 0 60px var(--work-glow); }
+.countdown.BREAK { color: var(--break); text-shadow: 0 0 60px var(--break-glow); }
+.countdown.PAUSE { color: var(--pause); text-shadow: 0 0 60px var(--pause-glow); }
+.countdown.IDLE  { color: var(--muted); text-shadow: none; }
+
+/* RTC clock — CENTER DISPLAY */
+.rtc-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.rtc-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin-bottom: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.rtc-label::before, .rtc-label::after {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--rim2);
+}
+.rtc-time {
+  font-family: var(--display);
+  font-size: 48px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -.02em;
+  line-height: 1;
+}
+.rtc-date {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--sub);
+  letter-spacing: .06em;
+  margin-top: 4px;
+}
+.rtc-weekday {
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: .04em;
+  margin-top: 8px;
+}
+
+/* ── Ring ── */
+.ring-wrap {
+  position: relative;
+  width: 148px; height: 148px;
+  flex-shrink: 0;
+}
+.ring-wrap svg { transform: rotate(-90deg); filter: drop-shadow(0 0 12px currentColor); }
+.ring-svg { color: transparent; }
+
+.ring-bg {
+  fill: none;
+  stroke: var(--panel2);
+  stroke-width: 8;
+}
+.ring-track {
+  fill: none;
+  stroke: var(--rim);
+  stroke-width: 1;
+}
+.ring-fill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 408;
+  stroke-dashoffset: 408;
+  transition: stroke-dashoffset 1s linear, stroke .4s;
+}
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.ring-pct {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+.ring-lbl {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .18em;
+  color: var(--sub);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
+   STATS ROW
+═══════════════════════════════════════════ */
+.stats-row {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.stat-card {
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--r);
+  padding: 20px 22px;
+  transition: border-color var(--t-med), transform var(--t-fast);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card:hover {
+  border-color: var(--rim2);
+  transform: translateY(-2px);
+}
+.stat-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity var(--t-med);
+}
+.stat-card:hover::after { opacity: .5; }
+
+.stat-icon {
+  font-size: 16px;
+  margin-bottom: 12px;
+  opacity: .6;
+}
+.stat-val {
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  letter-spacing: -.02em;
+  margin-bottom: 4px;
+  transition: color var(--t-med);
+}
+.stat-lbl {
+  font-size: 11px;
+  color: var(--sub);
+  letter-spacing: .04em;
+}
+
+/* ═══════════════════════════════════════════
+   LUX CHART
+═══════════════════════════════════════════ */
+.panel-lux {
+  grid-column: 1;
+  grid-row: 3;
+}
+.chart-wrap {
+  width: 100%;
+  height: 180px;
+  position: relative;
+}
+.chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ═══════════════════════════════════════════
+   RIGHT SIDEBAR
+═══════════════════════════════════════════ */
+.sidebar {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Controls ── */
+.panel-controls {}
+.btn-col { display: flex; flex-direction: column; gap: 10px; }
+
+.btn {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--rim);
+  background: var(--panel2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  display: flex; align-items: center; gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.btn-glyph {
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: transform var(--t-fast);
+}
+.btn:hover .btn-glyph { transform: scale(1.2); }
+
+.btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--t-fast);
+}
+.btn:hover::before { opacity: .06; }
+.btn:active { transform: scale(0.98); }
+
+.btn-start { border-color: rgba(0,229,160,.3);  color: var(--work); }
+.btn-stop  { border-color: rgba(199,125,255,.3); color: var(--pause); }
+.btn-reset { border-color: rgba(255,77,109,.3);  color: var(--danger); }
+
+.btn-start:hover { border-color: var(--work);  background: var(--work-dim); }
+.btn-stop:hover  { border-color: var(--pause); background: var(--pause-dim); }
+.btn-reset:hover { border-color: var(--danger); background: rgba(255,77,109,.08); }
+
+/* ── LED indicator ── */
+.led-strip {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg2);
+  border-radius: 8px;
+  border: 1px solid var(--rim);
+  margin-top: 14px;
+}
+.led-bulb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #111;
+  border: 2px solid var(--rim);
+  flex-shrink: 0;
+  transition: background var(--t-med), box-shadow var(--t-med), border-color var(--t-med);
+}
+.led-info { font-family: var(--mono); font-size: 10px; color: var(--sub); line-height: 1.6; }
+.led-rgb  { color: var(--text); font-size: 11px; }
+
+/* ── Color Picker ── */
+.panel-color {}
+.color-presets {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.preset-btn {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  outline: none;
+}
+.preset-btn:hover {
+  transform: scale(1.12);
+  border-color: rgba(255,255,255,.4);
+}
+.preset-btn.active {
+  border-color: white;
+  box-shadow: 0 0 16px var(--accent);
+}
+.preset-btn[data-off="1"] {
+  background: var(--panel2) !important;
+  border: 2px solid var(--rim2) !important;
+}
+.preset-btn[data-off="1"]::after {
+  content: '✕';
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: 12px;
+  color: var(--sub);
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.slider-row {
+  display: grid;
+  grid-template-columns: 18px 1fr 36px;
+  align-items: center;
+  gap: 10px;
+}
+.slider-row label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  color: var(--sub);
+}
+input[type=range] {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--panel2);
+  border-radius: 2px;
+  outline: none;
+  position: relative;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 8px var(--work-glow);
+  transition: transform .15s;
+  cursor: pointer;
+}
+input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.2); }
+#slR::-webkit-slider-thumb { background: #ff6b6b; box-shadow: 0 0 8px rgba(255,107,107,.5); }
+#slG::-webkit-slider-thumb { background: #6bff9e; box-shadow: 0 0 8px rgba(107,255,158,.5); }
+#slB::-webkit-slider-thumb { background: #6baeff; box-shadow: 0 0 8px rgba(107,174,255,.5); }
+
+.slider-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text);
+  text-align: right;
+}
+
+.color-preview {
+  width: 100%; height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--rim);
+  margin-bottom: 14px;
+  transition: background .3s;
+  position: relative;
+  overflow: hidden;
+}
+.color-preview::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 60%);
+}
+
+.btn-apply {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,229,160,.3);
+  background: rgba(0,229,160,.07);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-apply:hover {
+  background: rgba(0,229,160,.14);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(0,229,160,.15);
+}
+.btn-apply:active { transform: scale(.98); }
+
+/* ═══════════════════════════════════════════
+   STATS TỔNG HỢP (từ /api/stats)
+═══════════════════════════════════════════ */
+.panel-stats {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 0;
+  background: none;
+  border: none;
+}
+.panel-stats::before { display: none; }
+.panel-stats:hover { border-color: transparent; }
+
+.stats-item {
+  background: var(--panel);
+  border: 1px solid var(--rim);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 4px;
+  transition: border-color var(--t-med), transform var(--t-fast);
+  position: relative; overflow: hidden;
+}
+.stats-item:hover { border-color: var(--rim2); transform: translateY(-2px); }
+.stats-item::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--break), transparent);
+  opacity: 0;
+  transition: opacity var(--t-med);
+}
+.stats-item:hover::after { opacity: .5; }
+.stats-item-icon { font-size: 15px; margin-bottom: 8px; opacity: .6; }
+.stats-item-val {
+  font-family: var(--display);
+  font-size: 28px; font-weight: 700;
+  color: var(--break);
+  line-height: 1; letter-spacing: -.02em;
+  margin-bottom: 3px;
+}
+.stats-item-lbl { font-size: 10px; color: var(--sub); letter-spacing: .05em; }
+
+/* ═══════════════════════════════════════════
+   LOG TABLE — FULL WIDTH
+═══════════════════════════════════════════ */
+.panel-log {
+  grid-column: 1 / -1;
+}
+
+/* Log header row with clear button */
+.log-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.log-header .panel-label { margin-bottom: 0; }
+
+.btn-clear-log {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,77,109,.3);
+  background: rgba(255,77,109,.07);
+  color: var(--danger);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-clear-log:hover {
+  background: rgba(255,77,109,.15);
+  border-color: var(--danger);
+}
+.btn-clear-log:active { transform: scale(.97); }
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.log-table th {
+  text-align: left;
+  padding: 8px 14px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--sub);
+  border-bottom: 1px solid var(--rim);
+}
+.log-table td {
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  border-bottom: 1px solid rgba(26,32,64,.5);
+  transition: background var(--t-fast);
+}
+.log-table tr:last-child td { border-bottom: none; }
+.log-table tbody tr:hover td { background: rgba(255,255,255,.02); }
+
+.log-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .14em;
+}
+.log-badge::before {
+  content: '';
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.log-badge.WORK_END  { background: var(--work-dim);  color: var(--work); }
+.log-badge.BREAK_END { background: var(--break-dim); color: var(--break); }
+.log-badge.RESET     { background: rgba(255,77,109,.12); color: var(--danger); }
+
+.log-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+}
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+.toast-wrap {
+  position: fixed; bottom: 28px; right: 28px;
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 9999;
+}
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 18px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateX(12px);
+  transition: all .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.toast.show { opacity: 1; transform: translateX(0); }
+.toast.err  { border-color: var(--danger); color: var(--danger); }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+  .panel-hero, .stats-row, .panel-lux, .sidebar, .panel-log, .panel-stats {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .panel-stats { grid-template-columns: repeat(2, 1fr); }
+  .panel-hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .hero-center {
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid var(--rim);
+    border-bottom: 1px solid var(--rim);
+    padding: 20px 0;
+  }
+  .hero-right { align-items: center; }
+  .sidebar { flex-direction: row; flex-wrap: wrap; }
+  .sidebar > .panel { flex: 1; min-width: 260px; }
+  .countdown { font-size: 56px; }
+}
+
+@media (max-width: 560px) {
+  body { padding: 0; }
+  .app { padding: 16px 14px 48px; }
+  .countdown { font-size: 48px; }
+  .ring-wrap { width: 110px; height: 110px; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ─── HEADER ─── -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="7" stroke="#00e5a0" stroke-width="1.5"/>
+          <path d="M9 5v4l3 2" stroke="#00e5a0" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text"><span>Study</span> Dashboard</div>
+        <div class="logo-sub">Pomodoro · LED · Lux Monitor</div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="status-pill" id="statusPill">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">OFFLINE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── MAIN GRID ─── -->
+  <div class="grid">
+
+    <!-- HERO STATUS -->
+    <div class="panel panel-hero">
+
+      <!-- LEFT: Pomodoro countdown -->
+      <div class="hero-left">
+        <div class="panel-label">Trạng thái Pomodoro</div>
+        <div class="state-badge IDLE" id="stateBadge">
+          <span class="dot"></span>
+          <span id="stateLabel">IDLE</span>
+        </div>
+        <div class="countdown-wrap">
+          <div class="countdown IDLE" id="countdown">--:--</div>
+        </div>
+        <div class="led-strip">
+          <div class="led-bulb" id="ledBulb"></div>
+          <div class="led-info">
+            <div class="led-rgb" id="ledRgbVal">OFF</div>
+            <div>Brightness&nbsp;<span id="ledBrt">0</span>%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER: RTC Clock -->
+      <div class="hero-center">
+        <div class="rtc-block">
+          <div class="rtc-label">Giờ hiện tại</div>
+          <div class="rtc-time" id="rtcTime">--:--:--</div>
+          <div class="rtc-weekday" id="rtcWeekday">---</div>
+<div class="rtc-date" id="rtcDate">-- tháng -- năm ----</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Ring progress -->
+      <div class="hero-right">
+        <div class="ring-wrap">
+          <svg class="ring-svg" width="148" height="148" viewBox="0 0 148 148">
+            <circle class="ring-bg" cx="74" cy="74" r="65"/>
+            <circle class="ring-fill" id="ringFill" cx="74" cy="74" r="65" stroke="var(--work)"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-pct" id="ringPct" style="color:var(--work)">0%</div>
+            <div class="ring-lbl">ELAPSED</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-val" id="statSessions">0</div>
+        <div class="stat-lbl">Phiên hôm nay</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏱</div>
+        <div class="stat-val" id="statTotal">0:00</div>
+        <div class="stat-lbl">Tổng thời gian học</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">☀️</div>
+        <div class="stat-val" id="statLux">0</div>
+        <div class="stat-lbl">Lux hiện tại</div>
+      </div>
+    </div>
+
+    <!-- LUX CHART -->
+    <div class="panel panel-lux">
+      <div class="panel-label">Biểu đồ cường độ ánh sáng (Lux)</div>
+      <div class="chart-wrap">
+        <canvas id="luxChart"></canvas>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- Controls -->
+      <div class="panel panel-controls">
+        <div class="panel-label">Điều khiển</div>
+        <div class="btn-col">
+          <button class="btn btn-start" onclick="sendCmd('START')">
+            <span class="btn-glyph">▶</span> START
+          </button>
+          <button class="btn btn-stop" onclick="sendCmd('STOP')">
+            <span class="btn-glyph">⏸</span> PAUSE
+          </button>
+          <button class="btn btn-reset" onclick="sendCmd('RESET')">
+            <span class="btn-glyph">↺</span> RESET
+          </button>
+        </div>
+      </div>
+
+      <!-- Color Picker -->
+      <div class="panel panel-color">
+        <div class="panel-label">Tùy chỉnh màu LED</div>
+        <div class="color-presets" id="presets"></div>
+        <div class="slider-group">
+          <div class="slider-row">
+            <label>R</label>
+            <input type="range" id="slR" min="0" max="255" value="255" oninput="updateColor()"/>
+            <div class="slider-val" id="valR">255</div>
+          </div>
+          <div class="slider-row">
+            <label>G</label>
+            <input type="range" id="slG" min="0" max="255" value="255" oninput="updateColor()"/>
+            <div class="slider-val" id="valG">255</div>
+          </div>
+          <div class="slider-row">
+            <label>B</label>
+            <input type="range" id="slB" min="0" max="255" value="255" oninput="updateColor()"/>
+            <div class="slider-val" id="valB">255</div>
+          </div>
+        </div>
+        <div class="color-preview" id="colorPreview"></div>
+        <button class="btn-apply" onclick="applyColor()">
+          <span>→</span> Áp dụng → LED
+        </button>
+      </div>
+
+    </div><!-- sidebar -->
+
+    <!-- STATS TỔNG HỢP từ /api/stats -->
+    <div class="panel panel-stats">
+      <div class="stats-item">
+        <div class="stats-item-icon">🎯</div>
+        <div class="stats-item-val" id="allSessions">0</div>
+        <div class="stats-item-lbl">Tổng phiên (toàn bộ)</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-item-icon">🕐</div>
+        <div class="stats-item-val" id="allWorkMin">0</div>
+        <div class="stats-item-lbl">Tổng phút học (log)</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-item-icon">💡</div>
+        <div class="stats-item-val" id="allAvgLux">0</div>
+        <div class="stats-item-lbl">Lux TB lúc học</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-item-icon">📋</div>
+        <div class="stats-item-val" id="allLogCount">0</div>
+        <div class="stats-item-lbl">Sự kiện trong log</div>
+      </div>
+    </div>
+
+    <!-- LOG TABLE — full width -->
+    <div class="panel panel-log">
+      <div class="log-header">
+        <div class="panel-label">Lịch sử phiên học</div>
+        <button class="btn-clear-log" onclick="clearLog()">
+          🗑 Xóa log
+        </button>
+      </div>
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Sự kiện</th>
+            <th>Thời lượng</th>
+            <th>Lux TB</th>
+          </tr>
+        </thead>
+        <tbody id="logBody">
+          <tr><td colspan="4" class="log-empty">Chưa có dữ liệu</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- .grid -->
+
+</div><!-- .app -->
+
+<!-- TOAST -->
+<div class="toast-wrap">
+  <div class="toast" id="toast"></div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════ -->
+<script>
+/* ── CONFIG ── */
+const SERVER  = "";   // "" = same origin; or "http://192.168.x.x:5000"
+const POLL_MS = 2000;
+
+/* ── RING circumference: r=65 → C = 2π×65 ≈ 408.4 ── */
+const CIRC = 2 * Math.PI * 65;
+document.getElementById("ringFill").setAttribute("stroke-dasharray", CIRC);
+document.getElementById("ringFill").setAttribute("stroke-dashoffset", CIRC);
+
+let POMODORO_TOTAL = 25 * 60;
+
+/* ═══════════════ COLOR PRESETS ═══════════════ */
+const PRESETS = [
+  { label:"Trắng lạnh", r:200, g:220, b:255 },
+  { label:"Vàng ấm",    r:255, g:200, b: 80 },
+  { label:"Xanh lá",    r: 50, g:255, b:100 },
+  { label:"Đỏ",         r:255, g: 40, b: 40 },
+  { label:"Tím",        r:180, g: 60, b:255 },
+  { label:"Trắng",      r:255, g:255, b:255 },
+  { label:"Cam",        r:255, g:120, b: 20 },
+  { label:"Xanh dương", r: 40, g:140, b:255 },
+  { label:"Hồng",       r:255, g: 80, b:180 },
+  { label:"Tắt",        r:  0, g:  0, b:  0 },
+];
+let activePreset = -1;
+
+function buildPresets() {
+  const wrap = document.getElementById("presets");
+  PRESETS.forEach((p, i) => {
+    const btn = document.createElement("button");
+    btn.className = "preset-btn";
+    btn.title = p.label;
+    if (p.r === 0 && p.g === 0 && p.b === 0) {
+      btn.setAttribute("data-off", "1");
+    } else {
+      btn.style.background = `rgb(${p.r},${p.g},${p.b})`;
+    }
+    btn.onclick = () => selectPreset(i);
+    wrap.appendChild(btn);
+  });
+}
+
+function selectPreset(i) {
+  activePreset = i;
+  const p = PRESETS[i];
+  document.getElementById("slR").value = p.r;
+  document.getElementById("slG").value = p.g;
+  document.getElementById("slB").value = p.b;
+  updateColor();
+  document.querySelectorAll(".preset-btn").forEach((b, j) =>
+    b.classList.toggle("active", j === i));
+}
+
+function updateColor() {
+  const r = +document.getElementById("slR").value;
+  const g = +document.getElementById("slG").value;
+  const b = +document.getElementById("slB").value;
+  document.getElementById("valR").textContent = r;
+  document.getElementById("valG").textContent = g;
+  document.getElementById("valB").textContent = b;
+  document.getElementById("colorPreview").style.background = `rgb(${r},${g},${b})`;
+}
+
+async function applyColor() {
+  const r = +document.getElementById("slR").value;
+  const g = +document.getElementById("slG").value;
+  const b = +document.getElementById("slB").value;
+  const ok = await sendCmd("COLOR", { r, g, b });
+  if (ok) showToast(`RGB(${r}, ${g}, ${b}) → ESP32`);
+}
+
+/* ═══════════════ SEND CMD ═══════════════ */
+async function sendCmd(cmd, extra = {}) {
+  try {
+    const res = await fetch(SERVER + "/api/control", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cmd, ...extra }),
+    });
+    const data = await res.json();
+    if (data.status === "queued") {
+      showToast(`${cmd} đã gửi ✓`);
+      return true;
+    }
+  } catch(e) {
+    showToast("Lỗi kết nối server", true);
+  }
+  return false;
+}
+
+/* ═══════════════ POLLING ═══════════════ */
+async function pollStatus() {
+  try {
+    const res  = await fetch(SERVER + "/api/status");
+    const data = await res.json();
+    updateUI(data);
+  } catch(e) { setOffline(); }
+}
+
+const STATE_COLOR = {
+  WORK:  "var(--work)",
+  BREAK: "var(--break)",
+  PAUSE: "var(--pause)",
+  IDLE:  "var(--muted)",
+};
+
+function updateUI(d) {
+  /* Status pill */
+  const dot  = document.getElementById("statusDot");
+  const pill = document.getElementById("statusPill");
+  const stxt = document.getElementById("statusText");
+  const online = d.online;
+  dot.classList.toggle("online", online);
+  pill.classList.toggle("online", online);
+  stxt.textContent = online ? "ONLINE" : "OFFLINE";
+
+  /* State badge */
+  const badge = document.getElementById("stateBadge");
+  badge.className = `state-badge ${d.state}`;
+  document.getElementById("stateLabel").textContent = d.state;
+
+  /* Countdown */
+  const cd = document.getElementById("countdown");
+  const m  = Math.floor(d.remaining_sec / 60);
+  const s  = d.remaining_sec % 60;
+  cd.textContent = d.state === "IDLE"
+    ? "--:--"
+    : `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  cd.className = `countdown ${d.state}`;
+
+  /* RTC */
+  document.getElementById("rtcTime").textContent =
+    `${String(d.hour).padStart(2,"0")}:${String(d.min).padStart(2,"0")}:${String(d.sec).padStart(2,"0")}`;
+// Luôn hiển thị ngày (fix bug: d.date có thể = 0 khi chưa có data)
+  const WEEKDAYS = ["Chủ Nhật","Thứ Hai","Thứ Ba","Thứ Tư","Thứ Năm","Thứ Sáu","Thứ Bảy"];
+  if (d.date !== undefined && d.month && d.year) {
+    const fullYear = 2000 + d.year;
+    const jsDate = new Date(fullYear, d.month - 1, d.date);
+    const weekday = WEEKDAYS[jsDate.getDay()];
+    document.getElementById("rtcWeekday").textContent = weekday;
+    document.getElementById("rtcDate").textContent =
+      `${String(d.date).padStart(2,"0")} tháng ${String(d.month).padStart(2,"0")} năm ${fullYear}`;
+  }
+  /* Ring */
+  if (d.state === "WORK")  POMODORO_TOTAL = 25 * 60;
+  if (d.state === "BREAK") POMODORO_TOTAL =  5 * 60;
+  const elapsed = POMODORO_TOTAL - d.remaining_sec;
+  const pct     = d.state === "IDLE" ? 0 : Math.min(100, elapsed / POMODORO_TOTAL * 100);
+  const offset  = CIRC * (1 - pct / 100);
+  const clr     = STATE_COLOR[d.state] || "var(--muted)";
+  const ring    = document.getElementById("ringFill");
+  ring.style.strokeDashoffset = offset;
+  ring.style.stroke           = clr;
+  document.getElementById("ringPct").textContent  = Math.round(pct) + "%";
+  document.getElementById("ringPct").style.color  = clr;
+
+  /* Stats */
+  document.getElementById("statSessions").textContent = d.sessions_today;
+  const tm  = d.total_time_sec;
+  const th  = Math.floor(tm / 3600);
+  const tmm = Math.floor((tm % 3600) / 60);
+  document.getElementById("statTotal").textContent =
+    th > 0 ? `${th}h${String(tmm).padStart(2,"0")}` : `${tmm}:${String(tm % 60).padStart(2,"0")}`;
+  document.getElementById("statLux").textContent = d.lux.toFixed(0);
+
+  /* LED */
+  const lr = d.led_r ?? 0, lg = d.led_g ?? 0, lb = d.led_b ?? 0;
+  const bulb = document.getElementById("ledBulb");
+  bulb.style.background   = `rgb(${lr},${lg},${lb})`;
+  bulb.style.borderColor  = (d.led_brt > 0) ? `rgba(${lr},${lg},${lb},.5)` : "var(--rim)";
+  bulb.style.boxShadow    = (d.led_brt > 0)
+    ? `0 0 14px rgb(${lr},${lg},${lb}), 0 0 4px rgb(${lr},${lg},${lb}) inset`
+    : "none";
+  document.getElementById("ledRgbVal").textContent =
+    (d.led_brt > 0) ? `rgb(${lr}, ${lg}, ${lb})` : "OFF";
+  document.getElementById("ledBrt").textContent = d.led_brt ?? 0;
+}
+
+function setOffline() {
+  document.getElementById("statusDot").classList.remove("online");
+  document.getElementById("statusPill").classList.remove("online");
+  document.getElementById("statusText").textContent = "OFFLINE";
+}
+
+/* ═══════════════ LUX CHART ═══════════════ */
+let luxData = [];
+async function pollLux() {
+  try {
+    const res = await fetch(SERVER + "/api/lux");
+    luxData = await res.json();
+    drawLux();
+  } catch(e) {}
+}
+
+function drawLux() {
+  const canvas = document.getElementById("luxChart");
+  const dpr  = window.devicePixelRatio || 1;
+  canvas.width  = canvas.offsetWidth  * dpr;
+  canvas.height = canvas.offsetHeight * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+
+  if (!luxData.length) return;
+  const vals = luxData.map(d => d.lux);
+  const maxV = Math.max(...vals, 100);
+  const pad  = { t: 14, b: 28, l: 48, r: 14 };
+  const cw   = W - pad.l - pad.r;
+  const ch   = H - pad.t - pad.b;
+
+  /* Grid */
+  [0, .25, .5, .75, 1].forEach(f => {
+    const y = pad.t + ch * f;
+    ctx.strokeStyle = "rgba(255,255,255,.04)";
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(90,102,144,.7)";
+    ctx.font = `10px 'DM Mono', monospace`;
+    ctx.textAlign = "right";
+    ctx.fillText(Math.round(maxV * (1 - f)), pad.l - 8, y + 4);
+  });
+
+  const xOf = i => pad.l + (i / (vals.length - 1 || 1)) * cw;
+  const yOf = v => pad.t + ch * (1 - v / maxV);
+
+  /* Area fill */
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
+  grad.addColorStop(0,   "rgba(0,229,160,.28)");
+  grad.addColorStop(.7,  "rgba(0,229,160,.06)");
+  grad.addColorStop(1,   "rgba(0,229,160,0)");
+  ctx.beginPath();
+  vals.forEach((v, i) => {
+    const x = xOf(i), y = yOf(v);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo(xOf(vals.length - 1), pad.t + ch);
+  ctx.lineTo(pad.l, pad.t + ch);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  /* Line */
+  ctx.beginPath();
+  ctx.strokeStyle = "rgba(0,229,160,.9)";
+  ctx.lineWidth   = 2;
+  ctx.lineJoin    = "round";
+  ctx.lineCap     = "round";
+  vals.forEach((v, i) => {
+    const x = xOf(i), y = yOf(v);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  /* Dots at every 6th point */
+  const step = Math.max(1, Math.floor(vals.length / 6));
+  vals.forEach((v, i) => {
+    if (i % step !== 0 && i !== vals.length - 1) return;
+    const x = xOf(i), y = yOf(v);
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,229,160,1)";
+    ctx.fill();
+    ctx.strokeStyle = "var(--bg)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+
+  /* X labels */
+  ctx.fillStyle   = "rgba(90,102,144,.7)";
+  ctx.textAlign   = "center";
+  ctx.font        = `9px 'DM Mono', monospace`;
+  luxData.forEach((d, i) => {
+    if (i % step !== 0) return;
+    ctx.fillText(d.time, xOf(i), H - 6);
+  });
+}
+
+/* ═══════════════ STATS TỔNG HỢP ═══════════════ */
+async function pollStats() {
+  try {
+    const res  = await fetch(SERVER + "/api/stats");
+    const data = await res.json();
+    document.getElementById("allSessions").textContent  = data.total_sessions ?? 0;
+    document.getElementById("allWorkMin").textContent   = data.total_work_min  ?? 0;
+    document.getElementById("allAvgLux").textContent    = (data.avg_lux_during_work ?? 0).toFixed(0);
+    document.getElementById("allLogCount").textContent  = data.log_entries     ?? 0;
+  } catch(e) {}
+}
+
+/* ═══════════════ CLEAR LOG ═══════════════ */
+async function clearLog() {
+  if (!confirm("Xóa toàn bộ lịch sử phiên học?\nHành động này không thể hoàn tác.")) return;
+  try {
+    const res = await fetch(SERVER + "/api/log", { method: "DELETE" });
+    const data = await res.json();
+    if (data.status === "cleared") {
+      showToast("Đã xóa toàn bộ log ✓");
+      pollLog();
+      pollStats();
+    }
+  } catch(e) {
+    showToast("Lỗi khi xóa log", true);
+  }
+}
+
+/* ═══════════════ LOG TABLE ═══════════════ */
+async function pollLog() {
+  try {
+    const res  = await fetch(SERVER + "/api/log");
+    const logs = await res.json();
+    const tbody = document.getElementById("logBody");
+    if (!logs.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="log-empty">Chưa có dữ liệu</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = logs.map(l => {
+      const dur = l.duration
+        ? `${Math.floor(l.duration / 60)}p ${l.duration % 60}s` : "—";
+      return `<tr>
+        <td>${l.timestamp}</td>
+        <td><span class="log-badge ${l.event}">${l.event.replace("_", " ")}</span></td>
+        <td>${dur}</td>
+        <td>${l.lux_avg} lux</td>
+      </tr>`;
+    }).join("");
+  } catch(e) {}
+}
+
+/* ═══════════════ TOAST ═══════════════ */
+let toastTimer = null;
+function showToast(msg, err = false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className   = "toast" + (err ? " err" : "");
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+}
+
+/* ═══════════════ INIT ═══════════════ */
+buildPresets();
+updateColor();
+selectPreset(0);
+
+pollStatus();
+pollLux();
+pollLog();
+pollStats();
+
+setInterval(pollStatus, POLL_MS);
+setInterval(pollLux,    5000);
+setInterval(pollLog,    10000);
+setInterval(pollStats,  15000);
+window.addEventListener("resize", drawLux);
+</script>
+</body>
+</html>
