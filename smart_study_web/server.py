@@ -76,7 +76,7 @@ if os.path.exists(LOG_FILE):
 # ==========================================
 # CẤU HÌNH MQTT BROKER
 # ==========================================
-MQTT_BROKER = "broker.hivemq.com"
+MQTT_BROKER = "broker.emqx.io"
 MQTT_PORT = 1883
 TOPIC_STATUS = "dut/smartclock/trung/status"
 TOPIC_COMMAND = "dut/smartclock/trung/command"
@@ -379,5 +379,4 @@ if __name__ == "__main__":
     print("  DELETE /api/log    ← Xóa toàn bộ log")
     print("  GET  /api/stats    ← Thống kê tổng hợp")
     print("=" * 55)
-
-app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
