@@ -310,5 +310,23 @@
     "event": "WORK_END",
     "duration": 0,
     "lux_avg": 7.5
+  },
+  {
+    "timestamp": "2000-01-01 00:54:36",
+    "event": "WORK_END",
+    "duration": 2,
+    "lux_avg": 770.3
+  },
+  {
+    "timestamp": "2000-01-01 00:54:37",
+    "event": "RESET",
+    "duration": 0,
+    "lux_avg": 226.2
+  },
+  {
+    "timestamp": "2000-01-01 00:57:01",
+    "event": "WORK_END",
+    "duration": 0,
+    "lux_avg": 954.0
   }
 ]

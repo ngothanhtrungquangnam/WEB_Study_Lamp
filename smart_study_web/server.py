@@ -76,7 +76,8 @@ if os.path.exists(LOG_FILE):
 # ==========================================
 # CẤU HÌNH MQTT BROKER
 # ==========================================
-MQTT_BROKER = "broker.emqx.io"
+# Sửa từ hivemq sang emqx
+MQTT_BROKER = "broker.emqx.io" 
 MQTT_PORT = 1883
 TOPIC_STATUS = "dut/smartclock/trung/status"
 TOPIC_COMMAND = "dut/smartclock/trung/command"
