@@ -19,7 +19,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from datetime import datetime
 import json, os, threading
-
+import paho.mqtt.client as mqtt
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
@@ -48,13 +48,13 @@ system_state = {
     "online":         False,
 }
 
-# Hàng đợi lệnh gửi xuống ESP32
-pending_command = {
-    "cmd": None,   # "START" | "STOP" | "RESET" | "COLOR" | None
-    "r":   0,
-    "g":   0,
-    "b":   0,
-}
+# # Hàng đợi lệnh gửi xuống ESP32
+# pending_command = {
+#     "cmd": None,   # "START" | "STOP" | "RESET" | "COLOR" | None
+#     "r":   0,
+#     "g":   0,
+#     "b":   0,
+# }
 
 # Lịch sử
 study_log    = []
@@ -72,6 +72,107 @@ if os.path.exists(LOG_FILE):
     except Exception as e:
         print(f"[LOG] Đọc file lỗi: {e}")
         study_log = []
+
+# ==========================================
+# CẤU HÌNH MQTT BROKER
+# ==========================================
+MQTT_BROKER = "broker.hivemq.com"
+MQTT_PORT = 1883
+TOPIC_STATUS = "dut/smartclock/trung/status"
+TOPIC_COMMAND = "dut/smartclock/trung/command"
+
+def on_connect(client, userdata, flags, rc):
+    print("✅ Đã kết nối tới MQTT Broker thành công!")
+    client.subscribe(TOPIC_STATUS) # Bắt đầu lắng nghe ESP32
+
+def on_message(client, userdata, msg):
+    # Khai báo các biến global y hệt như hàm /api/study cũ
+    global system_state, _last_state, _lux_sum, _lux_count, _work_start_sec 
+
+    try:
+        # Đọc dữ liệu từ MQTT gửi về
+        payload = msg.payload.decode('utf-8')
+        data = json.loads(payload)
+        now = datetime.now()
+
+        with state_lock:
+            prev_state = system_state["state"]
+            cur_state  = data.get("state", system_state["state"])
+
+            # Cập nhật toàn bộ trạng thái
+            system_state.update({
+                "state":          cur_state,
+                "remaining_sec":  data.get("remaining_sec",  0),
+                "lux":            data.get("lux",            0.0),
+                "led_brt":        data.get("led_brt",        0),
+                "hour":           data.get("hour",           0),
+                "min":            data.get("min",            0),
+                "sec":            data.get("sec",            0),
+                "date":           data.get("date",           0),
+                "month":          data.get("month",          0),
+                "year":           data.get("year",           0),
+                "sessions_today": data.get("sessions_today", 0),
+                "total_time_sec": data.get("total_time_sec", 0),
+                "led_r":          data.get("led_r",          0),
+                "led_g":          data.get("led_g",          0),
+                "led_b":          data.get("led_b",          0),
+                "last_seen":      now.strftime("%Y-%m-%d %H:%M:%S"),
+                "online":         True,
+            })
+
+            # Ghi lịch sử lux
+            lux_val = data.get("lux", 0.0)
+            lux_history.append({
+                "time": now.strftime("%H:%M:%S"),
+                "lux":  round(lux_val, 1),
+            })
+            if len(lux_history) > MAX_LUX_HISTORY:
+                lux_history.pop(0)
+
+            # Tích lũy lux
+            _lux_sum   += lux_val
+            _lux_count += 1
+
+            # ── Phát hiện chuyển trạng thái → ghi log ──
+            if prev_state != cur_state:
+                avg_lux   = (_lux_sum / _lux_count) if _lux_count > 0 else 0.0
+                ts        = make_rtc_timestamp(data, now)
+                total_sec = data.get("total_time_sec", 0)
+
+                if prev_state == "WORK":
+                    duration = total_sec - _work_start_sec
+                    add_log_entry("WORK_END", max(duration, 0), avg_lux, ts)
+                elif prev_state == "BREAK":
+                    add_log_entry("BREAK_END", 0, avg_lux, ts)
+                elif prev_state in ("WORK", "BREAK", "PAUSE") and cur_state == "IDLE":
+                    add_log_entry("RESET", 0, avg_lux, ts)
+
+                # Ghi nhớ điểm bắt đầu WORK
+                if cur_state == "WORK" and prev_state != "WORK":
+                    _work_start_sec = total_sec
+
+                # Reset bộ tích lũy lux
+                _lux_sum   = 0.0
+                _lux_count = 0
+
+        # In ra Terminal (Có chữ [MQTT] để dễ nhận biết)
+        print(f"[MQTT ESP32] {now.strftime('%H:%M:%S')} | "
+              f"State={cur_state} | "
+              f"Remain={data.get('remaining_sec', 0)}s | "
+              f"Lux={lux_val:.1f} | "
+              f"LED=rgb({data.get('led_r',0)},{data.get('led_g',0)},{data.get('led_b',0)})")
+
+    except Exception as e:
+        print("Lỗi đọc MQTT:", e)
+
+# Khởi động MQTT Client chạy ngầm
+mqtt_client = mqtt.Client()
+mqtt_client.on_connect = on_connect
+mqtt_client.on_message = on_message
+mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
+mqtt_client.loop_start() # Hàm này giúp MQTT chạy song song với Flask
+# ==========================================
+
 
 # ============================================================
 #  HÀM TIỆN ÍCH
@@ -135,104 +236,6 @@ _lux_count      = 0
 _work_start_sec = 0   # total_time_sec lúc bắt đầu WORK — để tính duration chính xác
 
 
-# ============================================================
-#  API: ESP32 → Server  (POST /api/study)
-# ============================================================
-@app.route("/api/study", methods=["POST"])
-def receive_study_data():
-    global _last_state, _lux_sum, _lux_count, _work_start_sec
-
-    data = request.get_json(silent=True)
-    if not data:
-        return jsonify({"error": "invalid json"}), 400
-
-    now = datetime.now()
-
-    with state_lock:
-        prev_state = system_state["state"]
-        cur_state  = data.get("state", system_state["state"])
-
-        # Cập nhật toàn bộ trạng thái
-        system_state.update({
-            "state":          cur_state,
-            "remaining_sec":  data.get("remaining_sec",  0),
-            "lux":            data.get("lux",            0.0),
-            "led_brt":        data.get("led_brt",        0),
-            "hour":           data.get("hour",           0),
-            "min":            data.get("min",            0),
-            "sec":            data.get("sec",            0),
-            "date":           data.get("date",           0),
-            "month":          data.get("month",          0),
-            "year":           data.get("year",           0),
-            "sessions_today": data.get("sessions_today", 0),
-            "total_time_sec": data.get("total_time_sec", 0),
-            "led_r":          data.get("led_r",          0),
-            "led_g":          data.get("led_g",          0),
-            "led_b":          data.get("led_b",          0),
-            "last_seen":      now.strftime("%Y-%m-%d %H:%M:%S"),
-            "online":         True,
-        })
-
-        # Ghi lịch sử lux
-        lux_val = data.get("lux", 0.0)
-        lux_history.append({
-            "time": now.strftime("%H:%M:%S"),
-            "lux":  round(lux_val, 1),
-        })
-        if len(lux_history) > MAX_LUX_HISTORY:
-            lux_history.pop(0)
-
-        # Tích lũy lux
-        _lux_sum   += lux_val
-        _lux_count += 1
-
-        # ── Phát hiện chuyển trạng thái → ghi log ──
-        if prev_state != cur_state:
-            avg_lux   = (_lux_sum / _lux_count) if _lux_count > 0 else 0.0
-            ts        = make_rtc_timestamp(data, now)
-            total_sec = data.get("total_time_sec", 0)
-
-            # FIX: logic điều kiện ghi log đúng
-            if prev_state == "WORK":
-                # Tính duration thực tế của phiên WORK vừa kết thúc
-                duration = total_sec - _work_start_sec
-                add_log_entry("WORK_END", max(duration, 0), avg_lux, ts)
-
-            elif prev_state == "BREAK":
-                add_log_entry("BREAK_END", 0, avg_lux, ts)
-
-            elif prev_state in ("WORK", "BREAK", "PAUSE") and cur_state == "IDLE":
-                # RESET từ bất kỳ trạng thái nào về IDLE
-                add_log_entry("RESET", 0, avg_lux, ts)
-
-            # Ghi nhớ điểm bắt đầu WORK để tính duration
-            if cur_state == "WORK" and prev_state != "WORK":
-                _work_start_sec = total_sec
-
-            # Reset bộ tích lũy lux
-            _lux_sum   = 0.0
-            _lux_count = 0
-
-    print(f"[ESP32] {now.strftime('%H:%M:%S')} | "
-          f"State={cur_state} | "
-          f"Remain={data.get('remaining_sec', 0)}s | "
-          f"Lux={lux_val:.1f} | "
-          f"LED=rgb({data.get('led_r',0)},{data.get('led_g',0)},{data.get('led_b',0)})")
-
-    return jsonify({"status": "ok"}), 200
-
-
-# ============================================================
-#  API: Server → ESP32  (GET /api/command)
-# ============================================================
-@app.route("/api/command", methods=["GET"])
-def get_command():
-    with state_lock:
-        cmd = dict(pending_command)
-        # Xóa lệnh sau khi ESP32 đã nhận
-        pending_command["cmd"] = None
-    return jsonify(cmd), 200
-
 
 # ============================================================
 #  API: Browser → Server  (POST /api/control)
@@ -247,24 +250,21 @@ def control():
     if cmd not in ("START", "STOP", "RESET", "COLOR"):
         return jsonify({"error": f"unknown cmd: {cmd}"}), 400
 
-    with state_lock:
-        pending_command["cmd"] = cmd
-        if cmd == "COLOR":
-            # Clamp giá trị 0-255
-            pending_command["r"] = max(0, min(255, int(data.get("r", 255))))
-            pending_command["g"] = max(0, min(255, int(data.get("g", 255))))
-            pending_command["b"] = max(0, min(255, int(data.get("b", 255))))
-        else:
-            pending_command["r"] = 0
-            pending_command["g"] = 0
-            pending_command["b"] = 0
-
+    # Đóng gói lệnh thành JSON
+    payload = {"cmd": cmd}
     log_extra = ""
+    
     if cmd == "COLOR":
-        log_extra = f"R={pending_command['r']} G={pending_command['g']} B={pending_command['b']}"
-    print(f"[WEB] Dashboard → {cmd} {log_extra}")
+        payload["r"] = max(0, min(255, int(data.get("r", 255))))
+        payload["g"] = max(0, min(255, int(data.get("g", 255))))
+        payload["b"] = max(0, min(255, int(data.get("b", 255))))
+        log_extra = f"R={payload['r']} G={payload['g']} B={payload['b']}"
 
-    return jsonify({"status": "queued", "cmd": cmd}), 200
+    # BẮN LỆNH THẲNG XUỐNG ESP32 QUA MQTT
+    mqtt_client.publish(TOPIC_COMMAND, json.dumps(payload))
+    print(f"[WEB MQTT] Đã bắn lệnh → {cmd} {log_extra}")
+
+    return jsonify({"status": "published_to_mqtt", "cmd": cmd}), 200
 
 
 # ============================================================
