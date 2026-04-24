@@ -241,6 +241,9 @@ _work_start_sec = 0   # total_time_sec lúc bắt đầu WORK — để tính du
 # ============================================================
 #  API: Browser → Server  (POST /api/control)
 # ============================================================
+# ============================================================
+#  API: Browser → Server  (POST /api/control)
+# ============================================================
 @app.route("/api/control", methods=["POST"])
 def control():
     data = request.get_json(silent=True)
@@ -248,7 +251,8 @@ def control():
         return jsonify({"error": "missing cmd"}), 400
 
     cmd = data["cmd"].upper()
-    if cmd not in ("START", "STOP", "RESET", "COLOR"):
+    # THÊM "SET_TIME" vào danh sách cho phép
+    if cmd not in ("START", "STOP", "RESET", "COLOR", "SET_TIME"):
         return jsonify({"error": f"unknown cmd: {cmd}"}), 400
 
     # Đóng gói lệnh thành JSON
@@ -260,6 +264,12 @@ def control():
         payload["g"] = max(0, min(255, int(data.get("g", 255))))
         payload["b"] = max(0, min(255, int(data.get("b", 255))))
         log_extra = f"R={payload['r']} G={payload['g']} B={payload['b']}"
+        
+    # XỬ LÝ LỆNH SET_TIME MỚI
+    elif cmd == "SET_TIME":
+        payload["work"] = int(data.get("work", 25))
+        payload["break"] = int(data.get("break", 5))
+        log_extra = f"Work={payload['work']}p Break={payload['break']}p"
 
     # BẮN LỆNH THẲNG XUỐNG ESP32 QUA MQTT
     mqtt_client.publish(TOPIC_COMMAND, json.dumps(payload))

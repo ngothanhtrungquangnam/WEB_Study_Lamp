@@ -681,6 +681,22 @@ input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.2); }
 }
 .btn-apply:active { transform: scale(.98); }
 
+/* ── Time Config ── */
+.panel-time .slider-row { grid-template-columns: 50px 1fr; margin-bottom: 12px; }
+.time-input {
+  width: 100%;
+  background: var(--panel2);
+  border: 1px solid var(--rim);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-align: right;
+  outline: none;
+  transition: border-color var(--t-fast);
+}
+.time-input:focus { border-color: var(--accent); }
 /* ═══════════════════════════════════════════
    STATS TỔNG HỢP (từ /api/stats)
 ═══════════════════════════════════════════ */
@@ -1002,6 +1018,41 @@ input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.2); }
         </div>
       </div>
 
+      <div class="sidebar">
+
+      <div class="panel panel-controls">
+        <div class="panel-label">Điều khiển</div>
+        <div class="btn-col">
+          <button class="btn btn-start" onclick="sendCmd('START')">
+            <span class="btn-glyph">▶</span> START
+          </button>
+          <button class="btn btn-stop" onclick="sendCmd('STOP')">
+            <span class="btn-glyph">⏸</span> PAUSE
+          </button>
+          <button class="btn btn-reset" onclick="sendCmd('RESET')">
+            <span class="btn-glyph">↺</span> RESET
+          </button>
+        </div>
+      </div>
+
+      <div class="panel panel-time">
+        <div class="panel-label">Cài đặt Pomodoro</div>
+        <div class="slider-group">
+          <div class="slider-row">
+            <label>Học (phút)</label>
+            <input type="number" id="inpWork" min="1" max="120" value="25" class="time-input"/>
+          </div>
+          <div class="slider-row">
+            <label>Nghỉ (phút)</label>
+            <input type="number" id="inpBreak" min="1" max="60" value="5" class="time-input"/>
+          </div>
+        </div>
+        <button class="btn-apply" onclick="applyTimeConfig()">
+          <span>⏱</span> Lưu thời gian
+        </button>
+      </div>
+      <div class="panel panel-color">
+        <div class="panel-label">Tùy chỉnh màu LED</div>
       <!-- Color Picker -->
       <div class="panel panel-color">
         <div class="panel-label">Tùy chỉnh màu LED</div>
@@ -1163,6 +1214,20 @@ async function applyColor() {
 }
 
 /* ═══════════════ SEND CMD ═══════════════ */
+/* ═══════════════ TIME CONFIG ═══════════════ */
+let cfgWorkMin = 25;
+let cfgBreakMin = 5;
+
+async function applyTimeConfig() {
+  const w = parseInt(document.getElementById("inpWork").value) || 25;
+  const b = parseInt(document.getElementById("inpBreak").value) || 5;
+  cfgWorkMin = w;
+  cfgBreakMin = b;
+  
+  // Bắn lệnh SET_TIME xuống server
+  const ok = await sendCmd("SET_TIME", { work: w, break: b });
+  if (ok) showToast(`Đã lưu: Học ${w}p - Nghỉ ${b}p`);
+} 
 async function sendCmd(cmd, extra = {}) {
   try {
     const res = await fetch(SERVER + "/api/control", {
@@ -1235,8 +1300,8 @@ function updateUI(d) {
       `${String(d.date).padStart(2,"0")} tháng ${String(d.month).padStart(2,"0")} năm ${fullYear}`;
   }
   /* Ring */
-  if (d.state === "WORK")  POMODORO_TOTAL = 25 * 60;
-  if (d.state === "BREAK") POMODORO_TOTAL =  5 * 60;
+  if (d.state === "WORK")  POMODORO_TOTAL = cfgWorkMin * 60;
+  if (d.state === "BREAK") POMODORO_TOTAL = cfgBreakMin * 60;
   const elapsed = POMODORO_TOTAL - d.remaining_sec;
   const pct     = d.state === "IDLE" ? 0 : Math.min(100, elapsed / POMODORO_TOTAL * 100);
   const offset  = CIRC * (1 - pct / 100);
